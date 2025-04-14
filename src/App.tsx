@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,6 +41,7 @@ const App = () => (
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/society" element={<Navigate to="/admin/society-management" replace />} />
             <Route path="/admin/society-management" element={<SocietyManagement />} />
             <Route path="/admin/tenant-management" element={<TenantManagement />} />
             <Route path="/admin/property-listings" element={<PropertyListings />} />
