@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, ChevronDown, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   
   const navigationItems = role === "admin" ? adminNavigationItems : tenantNavigationItems;
   const currentUser = role === "admin" ? mockAdminUser : mockTenantUser;
@@ -101,7 +102,7 @@ export const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
                   variant="ghost"
                   className={cn(
                     "w-full justify-start gap-3 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent",
-                    window.location.pathname === item.href && "bg-sidebar-accent text-sidebar-accent-foreground"
+                    location.pathname === item.href && "bg-sidebar-accent text-sidebar-accent-foreground"
                   )}
                   onClick={() => {
                     navigate(item.href);
