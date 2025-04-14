@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -33,12 +34,14 @@ interface InviteTenantDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (email: string) => void;
+  isLoading?: boolean;
 }
 
 const InviteTenantDialog: React.FC<InviteTenantDialogProps> = ({
   open,
   onClose,
   onSubmit,
+  isLoading = false,
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -71,7 +74,12 @@ const InviteTenantDialog: React.FC<InviteTenantDialogProps> = ({
                 <FormItem>
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input placeholder="tenant@example.com" type="email" {...field} />
+                    <Input 
+                      placeholder="tenant@example.com" 
+                      type="email" 
+                      {...field} 
+                      disabled={isLoading}
+                    />
                   </FormControl>
                   <FormDescription>
                     Enter the email address of the tenant you want to invite
@@ -82,10 +90,27 @@ const InviteTenantDialog: React.FC<InviteTenantDialogProps> = ({
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isLoading}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Send Invitation</Button>
+              <Button 
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Invitation'
+                )}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

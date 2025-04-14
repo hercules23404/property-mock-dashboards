@@ -10,10 +10,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -36,12 +36,14 @@ interface CreateSocietyDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: FormValues) => void;
+  isLoading?: boolean;
 }
 
 const CreateSocietyDialog: React.FC<CreateSocietyDialogProps> = ({
   open,
   onClose,
   onSubmit,
+  isLoading = false,
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -75,7 +77,11 @@ const CreateSocietyDialog: React.FC<CreateSocietyDialogProps> = ({
                 <FormItem>
                   <FormLabel>Society Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter society name" {...field} />
+                    <Input 
+                      placeholder="Enter society name" 
+                      {...field} 
+                      disabled={isLoading}
+                    />
                   </FormControl>
                   <FormDescription>
                     The name of your housing society
@@ -92,7 +98,11 @@ const CreateSocietyDialog: React.FC<CreateSocietyDialogProps> = ({
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter society address" {...field} />
+                    <Input 
+                      placeholder="Enter society address" 
+                      {...field} 
+                      disabled={isLoading}
+                    />
                   </FormControl>
                   <FormDescription>
                     Full address of the society
@@ -114,6 +124,7 @@ const CreateSocietyDialog: React.FC<CreateSocietyDialogProps> = ({
                       min="1"
                       placeholder="Number of flats/apartments" 
                       {...field}
+                      disabled={isLoading}
                     />
                   </FormControl>
                   <FormDescription>
@@ -125,10 +136,27 @@ const CreateSocietyDialog: React.FC<CreateSocietyDialogProps> = ({
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isLoading}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Create Society</Button>
+              <Button 
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Society'
+                )}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
