@@ -32,9 +32,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // Fetch profile if user is logged in
+        // Use user metadata instead of fetching profile
         if (currentSession?.user) {
-          fetchProfile(currentSession.user.id);
+          const userData = currentSession.user;
+          setProfile({
+            id: userData.id,
+            email: userData.email,
+            full_name: userData.user_metadata.full_name,
+            role: userData.user_metadata.role,
+          });
         } else {
           setProfile(null);
         }
@@ -47,7 +53,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        fetchProfile(currentSession.user.id);
+        const userData = currentSession.user;
+        setProfile({
+          id: userData.id,
+          email: userData.email,
+          full_name: userData.user_metadata.full_name,
+          role: userData.user_metadata.role,
+        });
       }
       setLoading(false);
     });
@@ -56,26 +68,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
-    } catch (error: any) {
-      console.error("Error fetching profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch user profile",
-        variant: "destructive",
-      });
-    }
-  };
 
   const signOut = async () => {
     try {

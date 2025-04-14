@@ -51,26 +51,17 @@ const Login = () => {
       if (error) throw error;
 
       if (data.user) {
-        console.log("Login successful, fetching profile for:", data.user.id);
+        console.log("Login successful for:", data.user.id);
         
-        // Get the user's profile to determine their role
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Profile fetch error:", profileError);
-          throw new Error("Failed to fetch user profile");
-        }
-
-        console.log("User profile retrieved:", profile);
+        // Instead of fetching from profiles table (which has RLS issues),
+        // use the role from user_metadata which was set during signup
+        const userRole = data.user.user_metadata.role;
+        console.log("User role from metadata:", userRole);
         
         // Redirect based on role
-        if (profile?.role === 'admin') {
+        if (userRole === 'admin') {
           navigate('/admin');
-        } else if (profile?.role === 'tenant') {
+        } else if (userRole === 'tenant') {
           navigate('/tenant');
         } else {
           // Fallback if role is not set
