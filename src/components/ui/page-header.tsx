@@ -9,8 +9,10 @@ interface PageHeaderProps {
     label: string;
     onClick: () => void;
     icon?: React.ReactNode;
+    variant?: "default" | "outline" | "secondary" | "destructive" | "ghost" | "link";
   };
   className?: string;
+  children?: React.ReactNode;
 }
 
 export const PageHeader = ({
@@ -18,6 +20,7 @@ export const PageHeader = ({
   description,
   action,
   className,
+  children,
 }: PageHeaderProps) => {
   return (
     <div className={cn("flex flex-col md:flex-row md:items-center md:justify-between mb-6", className)}>
@@ -27,12 +30,19 @@ export const PageHeader = ({
           <p className="text-muted-foreground mt-1">{description}</p>
         )}
       </div>
-      {action && (
-        <Button onClick={action.onClick} className="mt-4 md:mt-0 gap-2">
-          {action.icon}
-          {action.label}
-        </Button>
-      )}
+      <div className="mt-4 md:mt-0 flex items-center gap-4">
+        {children}
+        {action && (
+          <Button 
+            onClick={action.onClick} 
+            variant={action.variant || "default"} 
+            className="gap-2"
+          >
+            {action.icon}
+            {action.label}
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
