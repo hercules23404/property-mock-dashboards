@@ -1,15 +1,15 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Notice } from "./NoticeList";
 
-interface NoticeCardProps {
-  id: string;
-  title: string;
-  content: string;
-  datePosted: string;
-}
-
-export const NoticeCard = ({ title, content, datePosted }: NoticeCardProps) => {
+export const NoticeCard = ({ 
+  title, 
+  content, 
+  datePosted, 
+  category, 
+  priority 
+}: Notice) => {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -20,6 +20,16 @@ export const NoticeCard = ({ title, content, datePosted }: NoticeCardProps) => {
           Posted on {datePosted}
         </p>
         <p className="line-clamp-2">{content}</p>
+        {category && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            Category: {category}
+          </div>
+        )}
+        {priority && (
+          <div className="mt-1 text-xs text-muted-foreground">
+            Priority: {priority}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -2,11 +2,15 @@
 import React from "react";
 import { NoticeCard } from "./NoticeCard";
 
-interface Notice {
-  id: string;
+export interface Notice {
+  id: number;  // Changed from string to number
   title: string;
   content: string;
+  category: string;
+  priority: string;
   datePosted: string;
+  postedBy: string;
+  properties: string[];
 }
 
 interface NoticeListProps {
