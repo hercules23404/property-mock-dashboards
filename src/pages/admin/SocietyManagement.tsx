@@ -24,12 +24,16 @@ const SocietyManagement = () => {
 
   useEffect(() => {
     const fetchSociety = async () => {
+      if (!profile?.id) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
+        console.log("Fetching society for profile ID:", profile.id);
         
-        if (!profile?.id) return;
-
-        // First check for society they created as admin
+        // First check for society created by user as admin
         const { data: adminSociety, error: adminError } = await supabase
           .from('societies')
           .select('*')
@@ -38,46 +42,48 @@ const SocietyManagement = () => {
 
         if (adminError) {
           console.error("Error fetching admin society:", adminError);
-          throw adminError;
+          toast({
+            title: "Error",
+            description: "Failed to fetch society information. Please try again.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
         }
 
         if (adminSociety) {
+          console.log("Found admin society:", adminSociety);
           setSociety(adminSociety);
           setLoading(false);
           return;
         }
 
         // If not found as admin, check profile for society_id
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('society_id')
-          .eq('id', profile.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-          throw profileError;
-        }
-
-        if (profileData?.society_id) {
+        if (profile.society_id) {
+          console.log("Checking society from profile society_id:", profile.society_id);
           const { data: societyData, error: societyError } = await supabase
             .from('societies')
             .select('*')
-            .eq('id', profileData.society_id)
+            .eq('id', profile.society_id)
             .maybeSingle();
 
           if (societyError) {
             console.error("Error fetching society by ID:", societyError);
-            throw societyError;
+            toast({
+              title: "Error",
+              description: "Failed to fetch society information. Please try again.",
+              variant: "destructive",
+            });
+          } else if (societyData) {
+            console.log("Found society from profile:", societyData);
+            setSociety(societyData);
           }
-          
-          setSociety(societyData);
         }
       } catch (error: any) {
-        console.error("Error in fetchSociety:", error);
+        console.error("Unexpected error in fetchSociety:", error);
         toast({
           title: "Error",
-          description: "Failed to fetch society information. Please try again later.",
+          description: "An unexpected error occurred. Please try again later.",
           variant: "destructive",
         });
       } finally {
@@ -89,17 +95,18 @@ const SocietyManagement = () => {
   }, [profile, toast]);
 
   const handleCreateSociety = async (societyData: any) => {
+    if (!profile?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a society",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      if (!profile?.id) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to create a society",
-          variant: "destructive",
-        });
-        return;
-      }
-      
       setLoading(true);
+      console.log("Creating society with data:", { ...societyData, created_by: profile.id });
       
       // Insert the society data
       const { data, error } = await supabase
@@ -113,8 +120,15 @@ const SocietyManagement = () => {
 
       if (error) {
         console.error("Error creating society:", error);
-        throw error;
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create society. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      console.log("Society created successfully:", data);
 
       // Update the user's profile with the society ID
       const { error: profileError } = await supabase
@@ -124,20 +138,26 @@ const SocietyManagement = () => {
 
       if (profileError) {
         console.error("Error updating profile:", profileError);
-        throw profileError;
+        toast({
+          title: "Warning",
+          description: "Society created but failed to update your profile. Please refresh the page.",
+          variant: "destructive",
+        });
+      } else {
+        console.log("Profile updated with society ID:", data.id);
+        toast({
+          title: "Success!",
+          description: "Society created successfully",
+        });
       }
 
       setSociety(data);
-      toast({
-        title: "Success!",
-        description: "Society created successfully",
-      });
       setShowCreateDialog(false);
     } catch (error: any) {
-      console.error("Error in handleCreateSociety:", error);
+      console.error("Unexpected error in handleCreateSociety:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create society. Please try again.",
+        description: "An unexpected error occurred. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -146,15 +166,17 @@ const SocietyManagement = () => {
   };
 
   const handleInviteTenant = async (email: string) => {
+    if (!society?.id) {
+      toast({
+        title: "Error",
+        description: "No society found to invite tenant to",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      if (!society?.id) {
-        toast({
-          title: "Error",
-          description: "No society found to invite tenant to",
-          variant: "destructive",
-        });
-        return;
-      }
+      console.log("Inviting tenant with email:", email, "to society:", society.id);
       
       // First check if invitation already exists
       const { data: existingInvite, error: checkError } = await supabase
@@ -166,10 +188,16 @@ const SocietyManagement = () => {
         
       if (checkError) {
         console.error("Error checking existing invitation:", checkError);
-        throw checkError;
+        toast({
+          title: "Error",
+          description: "Failed to check existing invitations. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
       
       if (existingInvite) {
+        console.log("Invitation already exists for email:", email);
         toast({
           title: "Notice",
           description: `An invitation for ${email} already exists`,
@@ -179,7 +207,7 @@ const SocietyManagement = () => {
       }
       
       // Create new invitation
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tenant_invitations')
         .insert([{
           email,
@@ -188,19 +216,25 @@ const SocietyManagement = () => {
 
       if (error) {
         console.error("Error creating invitation:", error);
-        throw error;
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send invitation",
+          variant: "destructive",
+        });
+        return;
       }
 
+      console.log("Invitation created successfully for email:", email);
       toast({
         title: "Success!",
         description: `Invitation sent to ${email}`,
       });
       setShowInviteDialog(false);
     } catch (error: any) {
-      console.error("Error in handleInviteTenant:", error);
+      console.error("Unexpected error in handleInviteTenant:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send invitation",
+        description: "An unexpected error occurred. Please try again later.",
         variant: "destructive",
       });
     }
