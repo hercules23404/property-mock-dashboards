@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -15,27 +14,18 @@ const SocietyManagement = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const { society, setSociety, loading } = useSocietyData(profile?.id);
 
-  // Helper function for consistent error handling
-  const showError = (title: string, description: string) => {
-    toast({
-      title,
-      description,
-      variant: "destructive",
-    });
-  };
-
   const handleCreateSociety = async (societyData: any) => {
     if (!profile?.id) {
-      showError(
-        "Error",
-        "You must be logged in to create a society"
-      );
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a society",
+        variant: "destructive",
+      });
       return;
     }
     
     try {
       setActionLoading(true);
-      console.log("Creating society with data:", { ...societyData, created_by: profile.id });
       
       // Insert the society data
       const { data, error } = await supabase
@@ -49,44 +39,46 @@ const SocietyManagement = () => {
 
       if (error) {
         console.error("Error creating society:", error);
-        showError(
-          "Error",
-          error.message || "Failed to create society. Please try again."
-        );
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create society. Please try again.",
+          variant: "destructive",
+        });
         return;
       }
-
-      console.log("Society created successfully:", data);
 
       // Update the user's profile with the society ID
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ society_id: data.id })
+        .update({ 
+          society_id: data.id,
+          role: 'admin' 
+        })
         .eq('id', profile.id);
 
       if (profileError) {
         console.error("Error updating profile:", profileError);
-        showError(
-          "Warning",
-          "Society created but failed to update your profile. Please refresh the page."
-        );
+        toast({
+          title: "Warning",
+          description: "Society created but failed to update your profile. Please refresh the page.",
+          variant: "destructive",
+        });
         return;
       }
 
-      console.log("Profile updated with society ID:", data.id);
       toast({
         title: "Success!",
         description: "Society created successfully",
       });
       
-      // Only update the society state after everything succeeds
       setSociety(data);
     } catch (error: any) {
       console.error("Unexpected error in handleCreateSociety:", error);
-      showError(
-        "Error",
-        "An unexpected error occurred. Please try again later."
-      );
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setActionLoading(false);
     }
@@ -94,10 +86,11 @@ const SocietyManagement = () => {
 
   const handleInviteTenant = async (email: string) => {
     if (!society?.id) {
-      showError(
-        "Error",
-        "No society found to invite tenant to"
-      );
+      toast({
+        title: "Error",
+        description: "No society found to invite tenant to",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -115,10 +108,11 @@ const SocietyManagement = () => {
         
       if (checkError) {
         console.error("Error checking existing invitation:", checkError);
-        showError(
-          "Error",
-          "Failed to check existing invitations. Please try again."
-        );
+        toast({
+          title: "Error",
+          description: "Failed to check existing invitations. Please try again.",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -141,10 +135,11 @@ const SocietyManagement = () => {
 
       if (error) {
         console.error("Error creating invitation:", error);
-        showError(
-          "Error",
-          error.message || "Failed to send invitation"
-        );
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send invitation",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -155,10 +150,11 @@ const SocietyManagement = () => {
       });
     } catch (error: any) {
       console.error("Unexpected error in handleInviteTenant:", error);
-      showError(
-        "Error",
-        "An unexpected error occurred. Please try again later."
-      );
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
+      });
     } finally {
       setActionLoading(false);
     }
