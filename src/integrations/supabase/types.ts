@@ -105,7 +105,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_profile_access: {
+        Args: { profile_id: string }
+        Returns: boolean
+      }
+      check_user_society_access: {
+        Args: { society_id: string }
+        Returns: boolean
+      }
+      user_has_society: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "tenant"
