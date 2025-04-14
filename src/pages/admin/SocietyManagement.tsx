@@ -29,46 +29,55 @@ const SocietyManagement = () => {
         
         if (!profile?.id) return;
 
-        // First check for society they created
-        let { data, error } = await supabase
+        // First check for society they created as admin
+        const { data: adminSociety, error: adminError } = await supabase
           .from('societies')
           .select('*')
           .eq('created_by', profile.id)
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is the "no rows returned" error
-          throw error;
+        if (adminError) {
+          console.error("Error fetching admin society:", adminError);
+          throw adminError;
         }
 
-        if (data) {
-          setSociety(data);
-        } else {
-          // If they didn't create one, check if they're part of one via their profile
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('society_id')
-            .eq('id', profile.id)
-            .single();
+        if (adminSociety) {
+          setSociety(adminSociety);
+          setLoading(false);
+          return;
+        }
 
-          if (profileError) throw profileError;
+        // If not found as admin, check profile for society_id
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('society_id')
+          .eq('id', profile.id)
+          .maybeSingle();
 
-          if (profileData?.society_id) {
-            const { data: societyData, error: societyError } = await supabase
-              .from('societies')
-              .select('*')
-              .eq('id', profileData.society_id)
-              .single();
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          throw profileError;
+        }
 
-            if (societyError) throw societyError;
-            
-            setSociety(societyData);
+        if (profileData?.society_id) {
+          const { data: societyData, error: societyError } = await supabase
+            .from('societies')
+            .select('*')
+            .eq('id', profileData.society_id)
+            .maybeSingle();
+
+          if (societyError) {
+            console.error("Error fetching society by ID:", societyError);
+            throw societyError;
           }
+          
+          setSociety(societyData);
         }
       } catch (error: any) {
-        console.error("Error fetching society:", error);
+        console.error("Error in fetchSociety:", error);
         toast({
           title: "Error",
-          description: "Failed to fetch society information",
+          description: "Failed to fetch society information. Please try again later.",
           variant: "destructive",
         });
       } finally {
@@ -81,25 +90,42 @@ const SocietyManagement = () => {
 
   const handleCreateSociety = async (societyData: any) => {
     try {
+      if (!profile?.id) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create a society",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setLoading(true);
+      
+      // Insert the society data
       const { data, error } = await supabase
         .from('societies')
         .insert([{
           ...societyData,
-          created_by: profile?.id
+          created_by: profile.id
         }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating society:", error);
+        throw error;
+      }
 
       // Update the user's profile with the society ID
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ society_id: data.id })
-        .eq('id', profile?.id);
+        .eq('id', profile.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Error updating profile:", profileError);
+        throw profileError;
+      }
 
       setSociety(data);
       toast({
@@ -108,10 +134,10 @@ const SocietyManagement = () => {
       });
       setShowCreateDialog(false);
     } catch (error: any) {
-      console.error("Error creating society:", error);
+      console.error("Error in handleCreateSociety:", error);
       toast({
         title: "Error",
-        description: "Failed to create society",
+        description: error.message || "Failed to create society. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -130,6 +156,29 @@ const SocietyManagement = () => {
         return;
       }
       
+      // First check if invitation already exists
+      const { data: existingInvite, error: checkError } = await supabase
+        .from('tenant_invitations')
+        .select('*')
+        .eq('email', email)
+        .eq('society_id', society.id)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error("Error checking existing invitation:", checkError);
+        throw checkError;
+      }
+      
+      if (existingInvite) {
+        toast({
+          title: "Notice",
+          description: `An invitation for ${email} already exists`,
+        });
+        setShowInviteDialog(false);
+        return;
+      }
+      
+      // Create new invitation
       const { error } = await supabase
         .from('tenant_invitations')
         .insert([{
@@ -137,7 +186,10 @@ const SocietyManagement = () => {
           society_id: society.id
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating invitation:", error);
+        throw error;
+      }
 
       toast({
         title: "Success!",
@@ -145,10 +197,10 @@ const SocietyManagement = () => {
       });
       setShowInviteDialog(false);
     } catch (error: any) {
-      console.error("Error inviting tenant:", error);
+      console.error("Error in handleInviteTenant:", error);
       toast({
         title: "Error",
-        description: "Failed to send invitation",
+        description: error.message || "Failed to send invitation",
         variant: "destructive",
       });
     }
