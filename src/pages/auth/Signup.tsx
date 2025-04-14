@@ -53,25 +53,27 @@ const Signup = () => {
     try {
       setIsLoading(true);
 
+      // Check if tenant has been invited (only if role is tenant)
       if (values.role === 'tenant') {
-        // Check if tenant has been invited
-        const { data: invitation } = await supabase
+        const { data: invitation, error: invitationError } = await supabase
           .from('tenant_invitations')
           .select('society_id')
           .eq('email', values.email)
           .single();
 
-        if (!invitation) {
+        if (invitationError || !invitation) {
           toast({
             title: "Registration Error",
             description: "You need an invitation to register as a tenant.",
             variant: "destructive",
           });
+          setIsLoading(false);
           return;
         }
       }
 
-      const { data: { user }, error } = await supabase.auth.signUp({
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -84,18 +86,18 @@ const Signup = () => {
 
       if (error) throw error;
 
-      if (user) {
-        if (values.role === 'admin') {
-          navigate('/admin/society-management');
-        } else {
-          navigate('/tenant');
-        }
-
-        toast({
-          title: "Welcome!",
-          description: "Your account has been created successfully.",
-        });
-      }
+      // Show success message and redirect to login
+      toast({
+        title: "Account Created",
+        description: "Your account has been created successfully. Please sign in.",
+      });
+      
+      // Sign out the user since we want them to explicitly sign in
+      await supabase.auth.signOut();
+      
+      // Redirect to login page
+      navigate('/login');
+      
     } catch (error: any) {
       toast({
         title: "Error",

@@ -41,24 +41,33 @@ const Login = () => {
   const onSubmit = async (values: LoginValues) => {
     try {
       setIsLoading(true);
-      const { data: { user }, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
 
       if (error) throw error;
 
-      if (user) {
-        const { data: profile } = await supabase
+      if (data.user) {
+        // Get the user's profile to determine their role
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', data.user.id)
           .single();
 
+        if (profileError) {
+          throw new Error("Failed to fetch user profile");
+        }
+
+        // Redirect based on role
         if (profile?.role === 'admin') {
           navigate('/admin');
-        } else {
+        } else if (profile?.role === 'tenant') {
           navigate('/tenant');
+        } else {
+          // Fallback if role is not set
+          navigate('/');
         }
 
         toast({

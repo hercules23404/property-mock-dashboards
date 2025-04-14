@@ -22,30 +22,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-    });
-
-    // Listen for auth changes
+    // First set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
+      (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        // Fetch profile if user is logged in
+        if (currentSession?.user) {
+          fetchProfile(currentSession.user.id);
         } else {
           setProfile(null);
         }
       }
     );
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        fetchProfile(currentSession.user.id);
+      }
+      setLoading(false);
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -63,6 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       setProfile(data);
     } catch (error: any) {
+      console.error("Error fetching profile:", error);
       toast({
         title: "Error",
         description: "Failed to fetch user profile",
