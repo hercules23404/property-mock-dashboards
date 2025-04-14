@@ -41,6 +41,8 @@ const Login = () => {
   const onSubmit = async (values: LoginValues) => {
     try {
       setIsLoading(true);
+      console.log("Attempting login with:", values.email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
@@ -49,6 +51,8 @@ const Login = () => {
       if (error) throw error;
 
       if (data.user) {
+        console.log("Login successful, fetching profile for:", data.user.id);
+        
         // Get the user's profile to determine their role
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -57,9 +61,12 @@ const Login = () => {
           .single();
 
         if (profileError) {
+          console.error("Profile fetch error:", profileError);
           throw new Error("Failed to fetch user profile");
         }
 
+        console.log("User profile retrieved:", profile);
+        
         // Redirect based on role
         if (profile?.role === 'admin') {
           navigate('/admin');
@@ -67,6 +74,7 @@ const Login = () => {
           navigate('/tenant');
         } else {
           // Fallback if role is not set
+          console.warn("No valid role found, defaulting to home page");
           navigate('/');
         }
 
@@ -76,6 +84,7 @@ const Login = () => {
         });
       }
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to sign in",

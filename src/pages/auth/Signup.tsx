@@ -52,6 +52,7 @@ const Signup = () => {
   const onSubmit = async (values: SignupValues) => {
     try {
       setIsLoading(true);
+      console.log("Submitting signup form with values:", values);
 
       // Check if tenant has been invited (only if role is tenant)
       if (values.role === 'tenant') {
@@ -61,7 +62,8 @@ const Signup = () => {
           .eq('email', values.email)
           .single();
 
-        if (invitationError || !invitation) {
+        if (invitationError) {
+          console.error("Invitation check error:", invitationError);
           toast({
             title: "Registration Error",
             description: "You need an invitation to register as a tenant.",
@@ -72,7 +74,7 @@ const Signup = () => {
         }
       }
 
-      // Sign up with Supabase
+      // Sign up with Supabase - CRITICAL: make sure we send metadata properly
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -84,7 +86,12 @@ const Signup = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Signup error:", error);
+        throw error;
+      }
+
+      console.log("Signup successful:", data);
 
       // Show success message and redirect to login
       toast({
@@ -99,6 +106,7 @@ const Signup = () => {
       navigate('/login');
       
     } catch (error: any) {
+      console.error("Signup process error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create account",
