@@ -1,27 +1,19 @@
 
-import React, { useState, useEffect } from "react";
-import { PlusCircle, Send, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PageHeader } from "@/components/ui/page-header";
-import { SearchFilters } from "@/components/ui/search-filters";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import CreateSocietyDialog from "@/components/society/CreateSocietyDialog";
-import InviteTenantDialog from "@/components/society/InviteTenantDialog";
+import React, { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSocietyData } from "@/hooks/useSocietyData";
+import LoadingSocietyState from "@/components/society/LoadingSocietyState";
+import EmptySocietyState from "@/components/society/EmptySocietyState";
+import SocietyDetails from "@/components/society/SocietyDetails";
 
 const SocietyManagement = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [society, setSociety] = useState<any>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const { society, setSociety, loading } = useSocietyData(profile?.id);
 
   // Helper function for consistent error handling
   const showError = (title: string, description: string) => {
@@ -31,78 +23,6 @@ const SocietyManagement = () => {
       variant: "destructive",
     });
   };
-
-  useEffect(() => {
-    const fetchSociety = async () => {
-      // Safely check if profile is available
-      if (!profile || !profile.id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        console.log("Fetching society for profile ID:", profile.id);
-        
-        // First check for society created by user as admin
-        const { data: adminSociety, error: adminError } = await supabase
-          .from('societies')
-          .select('*')
-          .eq('created_by', profile.id)
-          .maybeSingle();
-
-        if (adminError) {
-          console.error("Error fetching admin society:", adminError);
-          showError(
-            "Error",
-            "Failed to fetch society information. Please try again."
-          );
-          return;
-        }
-
-        if (adminSociety) {
-          console.log("Found admin society:", adminSociety);
-          setSociety(adminSociety);
-          return;
-        }
-
-        // If not found as admin, check profile for society_id
-        if (profile.society_id) {
-          console.log("Checking society from profile society_id:", profile.society_id);
-          const { data: societyData, error: societyError } = await supabase
-            .from('societies')
-            .select('*')
-            .eq('id', profile.society_id)
-            .maybeSingle();
-
-          if (societyError) {
-            console.error("Error fetching society by ID:", societyError);
-            showError(
-              "Error",
-              "Failed to fetch society information. Please try again."
-            );
-            return;
-          }
-          
-          if (societyData) {
-            console.log("Found society from profile:", societyData);
-            setSociety(societyData);
-          }
-        }
-      } catch (error: any) {
-        console.error("Unexpected error in fetchSociety:", error);
-        showError(
-          "Error",
-          "An unexpected error occurred. Please try again later."
-        );
-      } finally {
-        // Always set loading to false when done
-        setLoading(false);
-      }
-    };
-
-    fetchSociety();
-  }, [profile, toast]);
 
   const handleCreateSociety = async (societyData: any) => {
     if (!profile?.id) {
@@ -159,9 +79,8 @@ const SocietyManagement = () => {
         description: "Society created successfully",
       });
       
-      // Only update the society state and close dialog after everything succeeds
+      // Only update the society state after everything succeeds
       setSociety(data);
-      setShowCreateDialog(false);
     } catch (error: any) {
       console.error("Unexpected error in handleCreateSociety:", error);
       showError(
@@ -209,7 +128,6 @@ const SocietyManagement = () => {
           title: "Notice",
           description: `An invitation for ${email} already exists`,
         });
-        setShowInviteDialog(false);
         return;
       }
       
@@ -235,7 +153,6 @@ const SocietyManagement = () => {
         title: "Success!",
         description: `Invitation sent to ${email}`,
       });
-      setShowInviteDialog(false);
     } catch (error: any) {
       console.error("Unexpected error in handleInviteTenant:", error);
       showError(
@@ -249,90 +166,24 @@ const SocietyManagement = () => {
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Loading society information...</p>
-            </div>
-          </CardContent>
-        </Card>
-      );
+      return <LoadingSocietyState />;
     }
 
     if (!society) {
       return (
-        <>
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-3">No Society Created Yet</h2>
-            <p className="mb-6 text-muted-foreground">
-              You haven't created a society yet. Create one to start managing properties and tenants.
-            </p>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create New Society
-            </Button>
-          </div>
-          <CreateSocietyDialog 
-            open={showCreateDialog} 
-            onClose={() => setShowCreateDialog(false)}
-            onSubmit={handleCreateSociety}
-            isLoading={actionLoading}
-          />
-        </>
+        <EmptySocietyState 
+          onCreateSociety={handleCreateSociety}
+          isLoading={actionLoading} 
+        />
       );
     }
 
     return (
-      <>
-        <PageHeader 
-          title="Society Management"
-          description="Manage your society's information and settings"
-          action={{
-            label: "Invite Tenant",
-            icon: <Send className="h-4 w-4" />,
-            onClick: () => setShowInviteDialog(true),
-          }}
-        />
-        
-        <SearchFilters placeholder="Search society info..." />
-
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Society Information</h2>
-            <div className="grid gap-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Society Name</Label>
-                <Input defaultValue={society.name || "N/A"} className="col-span-3" readOnly />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Address</Label>
-                <Input defaultValue={society.address || "N/A"} className="col-span-3" readOnly />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Total Units</Label>
-                <Input defaultValue={society.total_units || 0} className="col-span-3" readOnly />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Created Date</Label>
-                <Input 
-                  defaultValue={society.created_at ? new Date(society.created_at).toLocaleDateString() : "N/A"} 
-                  className="col-span-3" 
-                  readOnly 
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <InviteTenantDialog
-          open={showInviteDialog}
-          onClose={() => setShowInviteDialog(false)}
-          onSubmit={handleInviteTenant}
-          isLoading={actionLoading}
-        />
-      </>
+      <SocietyDetails 
+        society={society} 
+        onInviteTenant={handleInviteTenant}
+        isLoading={actionLoading}
+      />
     );
   };
 
