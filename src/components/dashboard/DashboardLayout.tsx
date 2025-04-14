@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, ChevronDown, User, LogOut } from "lucide-react";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/utils/mockData";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -36,6 +38,16 @@ export const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
     navigate("/login");
   };
 
+  // Get user's initials for avatar fallback
+  const getInitials = () => {
+    if (!profile || !profile.full_name) return "U";
+    return profile.full_name
+      .split(" ")
+      .map(name => name[0])
+      .join("")
+      .toUpperCase();
+  };
+
   return (
     <ProtectedRoute requiredRole={role}>
       <div className="min-h-screen flex flex-col">
@@ -55,10 +67,13 @@ export const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full overflow-hidden">
-                      <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
-                    </div>
-                    <span className="hidden md:inline-block">{profile.name}</span>
+                    <Avatar className="w-8 h-8">
+                      {profile?.avatar && (
+                        <AvatarImage src={profile.avatar} alt={profile?.full_name || "User"} />
+                      )}
+                      <AvatarFallback>{getInitials()}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:inline-block">{profile?.full_name || "User"}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
