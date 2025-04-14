@@ -127,7 +127,14 @@ const Signup = () => {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout 
+      title={isInvitedTenant ? "Tenant Signup" : "Create an Account"}
+      description={
+        isInvitedTenant 
+          ? "Complete your tenant registration" 
+          : "Sign up to manage your property"
+      }
+    >
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Create an account</CardTitle>
