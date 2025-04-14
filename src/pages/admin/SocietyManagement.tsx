@@ -29,7 +29,7 @@ const SocietyManagement = () => {
       setActionLoading(true);
       
       // Insert the society data
-      const { data, error } = await supabase
+      const { data: societyResult, error: societyError } = await supabase
         .from('societies')
         .insert([{
           ...societyData,
@@ -38,11 +38,30 @@ const SocietyManagement = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error("Error creating society:", error);
+      if (societyError) {
+        console.error("Error creating society:", societyError);
         toast({
           title: "Error",
-          description: error.message || "Failed to create society. Please try again.",
+          description: societyError.message || "Failed to create society. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create admin role for the user
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: profile.id,
+          society_id: societyResult.id,
+          role: 'admin'
+        });
+
+      if (roleError) {
+        console.error("Error creating user role:", roleError);
+        toast({
+          title: "Warning",
+          description: "Society created but failed to set admin role. Please try again.",
           variant: "destructive",
         });
         return;
@@ -51,10 +70,7 @@ const SocietyManagement = () => {
       // Update the user's profile with the society ID
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ 
-          society_id: data.id,
-          role: 'admin' 
-        })
+        .update({ society_id: societyResult.id })
         .eq('id', profile.id);
 
       if (profileError) {
@@ -72,7 +88,7 @@ const SocietyManagement = () => {
         description: "Society created successfully",
       });
       
-      setSociety(data);
+      setSociety(societyResult);
     } catch (error: any) {
       console.error("Unexpected error in handleCreateSociety:", error);
       toast({
@@ -97,7 +113,6 @@ const SocietyManagement = () => {
     
     try {
       setActionLoading(true);
-      console.log("Inviting tenant with email:", email, "to society:", society.id);
       
       // First check if invitation already exists
       const { data: existingInvite, error: checkError } = await supabase
@@ -118,7 +133,6 @@ const SocietyManagement = () => {
       }
       
       if (existingInvite) {
-        console.log("Invitation already exists for email:", email);
         toast({
           title: "Notice",
           description: `An invitation for ${email} already exists`,
@@ -127,24 +141,23 @@ const SocietyManagement = () => {
       }
       
       // Create new invitation
-      const { data, error } = await supabase
+      const { error: inviteError } = await supabase
         .from('tenant_invitations')
         .insert([{
           email,
           society_id: society.id
         }]);
 
-      if (error) {
-        console.error("Error creating invitation:", error);
+      if (inviteError) {
+        console.error("Error creating invitation:", inviteError);
         toast({
           title: "Error",
-          description: error.message || "Failed to send invitation",
+          description: inviteError.message || "Failed to send invitation",
           variant: "destructive",
         });
         return;
       }
 
-      console.log("Invitation created successfully for email:", email);
       toast({
         title: "Success!",
         description: `Invitation sent to ${email}`,

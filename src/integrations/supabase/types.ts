@@ -100,6 +100,32 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          role: string
+          society_id: string
+          user_id: string
+        }
+        Insert: {
+          role: string
+          society_id: string
+          user_id: string
+        }
+        Update: {
+          role?: string
+          society_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
