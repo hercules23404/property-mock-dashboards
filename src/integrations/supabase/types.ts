@@ -9,7 +9,97 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          society_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          society_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          society_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      societies: {
+        Row: {
+          address: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          total_units: number | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          total_units?: number | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          total_units?: number | null
+        }
+        Relationships: []
+      }
+      tenant_invitations: {
+        Row: {
+          email: string
+          id: string
+          invited_at: string
+          society_id: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          invited_at?: string
+          society_id: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          invited_at?: string
+          society_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invitations_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +108,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "tenant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +223,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "tenant"],
+    },
   },
 } as const

@@ -1,9 +1,11 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -27,31 +29,35 @@ const queryClient = new QueryClient();
 const App = () => (
   <BrowserRouter>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/society-management" element={<SocietyManagement />} />
-          <Route path="/admin/tenant-management" element={<TenantManagement />} />
-          <Route path="/admin/property-listings" element={<PropertyListings />} />
-          <Route path="/admin/maintenance-requests" element={<MaintenanceRequests />} />
-          <Route path="/admin/notices" element={<NoticeBoard />} />
-          
-          {/* Tenant Routes */}
-          <Route path="/tenant" element={<TenantDashboard />} />
-          <Route path="/tenant/my-property" element={<MyProperty />} />
-          <Route path="/tenant/maintenance" element={<TenantMaintenance />} />
-          <Route path="/tenant/notices" element={<TenantNotices />} />
-          <Route path="/tenant/documents" element={<MyDocuments />} />
-          
-          {/* Catch-all route for 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/society-management" element={<SocietyManagement />} />
+            <Route path="/admin/tenant-management" element={<TenantManagement />} />
+            <Route path="/admin/property-listings" element={<PropertyListings />} />
+            <Route path="/admin/maintenance-requests" element={<MaintenanceRequests />} />
+            <Route path="/admin/notices" element={<NoticeBoard />} />
+            
+            {/* Tenant Routes */}
+            <Route path="/tenant" element={<TenantDashboard />} />
+            <Route path="/tenant/my-property" element={<MyProperty />} />
+            <Route path="/tenant/maintenance" element={<TenantMaintenance />} />
+            <Route path="/tenant/notices" element={<TenantNotices />} />
+            <Route path="/tenant/documents" element={<MyDocuments />} />
+            
+            {/* Catch-all route for 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </BrowserRouter>
 );
