@@ -1,28 +1,16 @@
-
-import React from "react";
-import { NoticeCard } from "./NoticeCard";
-
-export interface Notice {
-  id: number;  // Changed from string to number
-  title: string;
-  content: string;
-  category: string;
-  priority: string;
-  datePosted: string;
-  postedBy: string;
-  properties: string[];
-}
+import { Notice } from "@/types/notice";
+import NoticeCard from "./NoticeCard";
 
 interface NoticeListProps {
   notices: Notice[];
 }
 
-export const NoticeList = ({ notices }: NoticeListProps) => {
+export function NoticeList({ notices }: NoticeListProps) {
   return (
-    <div className="grid gap-4">
+    <div className="space-y-4">
       {notices.map((notice) => (
-        <NoticeCard key={notice.id} {...notice} />
+        <NoticeCard key={notice.id} notice={notice} />
       ))}
     </div>
   );
-};
+}

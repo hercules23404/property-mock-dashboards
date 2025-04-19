@@ -1,36 +1,56 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { Notice } from '@/types/notice';
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Notice } from "./NoticeList";
+interface NoticeCardProps {
+  notice: Notice;
+}
 
-export const NoticeCard = ({ 
-  title, 
-  content, 
-  datePosted, 
-  category, 
-  priority 
-}: Notice) => {
+const NoticeCard: React.FC<NoticeCardProps> = ({ notice }) => {
+  const getBadgeVariant = () => {
+    switch (notice.type) {
+      case 'info':
+        return 'secondary';
+      case 'warning':
+        return 'default';
+      case 'error':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle>{title}</CardTitle>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>{notice.title}</span>
+          <div className="flex gap-2">
+            <Badge variant={getBadgeVariant()}>{notice.type}</Badge>
+            {notice.isImportant && (
+              <Badge variant="secondary">Important</Badge>
+            )}
+            <Badge variant="outline">{notice.priority}</Badge>
+          </div>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-2">
-          Posted on {datePosted}
-        </p>
-        <p className="line-clamp-2">{content}</p>
-        {category && (
-          <div className="mt-2 text-xs text-muted-foreground">
-            Category: {category}
-          </div>
-        )}
-        {priority && (
-          <div className="mt-1 text-xs text-muted-foreground">
-            Priority: {priority}
-          </div>
-        )}
+        <p className="text-sm text-muted-foreground">{notice.content}</p>
+        <div className="flex justify-between items-center mt-2">
+          <p className="text-xs text-muted-foreground">
+            Created: {format(new Date(notice.createdAt), 'PPP')}
+          </p>
+          {notice.endDate && (
+            <p className="text-xs text-muted-foreground">
+              Ends: {format(new Date(notice.endDate), 'PPP')}
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
 };
+
+export default NoticeCard;

@@ -1,76 +1,75 @@
-
 import { Building, Home, FileSpreadsheet, FileText, BarChart3, Bell, Settings, UserCircle, Wrench, Calendar, Mail, ShieldCheck, Users, HelpCircle } from "lucide-react";
 
 export type UserRole = "admin" | "tenant";
 
 export const adminNavigationItems = [
-  { 
-    name: "Dashboard", 
-    href: "/admin", 
-    icon: BarChart3 
+  {
+    name: "Dashboard",
+    href: "/admin",
+    icon: BarChart3
   },
-  { 
-    name: "Society Management", 
-    href: "/admin/society", 
-    icon: Building 
+  {
+    name: "Society Management",
+    href: "/admin/society",
+    icon: Building
   },
-  { 
-    name: "Tenant Management", 
-    href: "/admin/tenants", 
-    icon: Users 
+  {
+    name: "Tenant Management",
+    href: "/admin/tenants",
+    icon: Users
   },
-  { 
-    name: "Property Listings", 
-    href: "/admin/properties", 
-    icon: Home 
+  {
+    name: "Property Listings",
+    href: "/admin/properties",
+    icon: Home
   },
-  { 
-    name: "Maintenance Requests", 
-    href: "/admin/maintenance", 
-    icon: Wrench 
+  {
+    name: "Maintenance Requests",
+    href: "/admin/maintenance",
+    icon: Wrench
   },
-  { 
-    name: "Notice Board", 
-    href: "/admin/notices", 
-    icon: Bell 
+  {
+    name: "Notice Board",
+    href: "/admin/notices",
+    icon: Bell
   },
-  { 
-    name: "Settings", 
-    href: "/admin/settings", 
-    icon: Settings 
+  {
+    name: "Settings",
+    href: "/admin/settings",
+    icon: Settings
   },
 ];
 
 export const tenantNavigationItems = [
-  { 
-    name: "Dashboard", 
-    href: "/tenant", 
-    icon: BarChart3 
+  {
+    name: "Dashboard",
+    href: "/tenant",
+    icon: BarChart3
   },
-  { 
-    name: "My Property", 
-    href: "/tenant/property", 
-    icon: Home 
+  {
+    name: "My Property",
+    href: "/tenant/property",
+    icon: Home
   },
-  { 
-    name: "Maintenance Requests", 
-    href: "/tenant/maintenance", 
-    icon: Wrench 
+  {
+    name: "Maintenance Requests",
+    href: "/tenant/maintenance",
+    icon: Wrench
   },
-  { 
-    name: "Notice Board", 
-    href: "/tenant/notices", 
-    icon: Bell 
+  {
+    name: "Notice Board",
+    href: "/tenant/notices",
+    icon: Bell
   },
-  { 
-    name: "My Documents", 
-    href: "/tenant/documents", 
-    icon: FileText 
+  {
+    name: "My Documents",
+    href: "/tenant/documents",
+    icon: FileText
   },
-  { 
-    name: "Settings", 
-    href: "/tenant/settings", 
-    icon: Settings 
+  {
+    name: "Settings",
+    href: "/tenant/settings",
+    icon: Settings
   },
 ];
 
@@ -287,54 +286,74 @@ export const mockMaintenanceRequests = [
 
 export const mockNotices = [
   {
-    id: 1,
+    id: "1",
     title: "Annual Building Maintenance",
     content: "We will be conducting annual maintenance checks on all units starting June 20th. Access to your unit will be required for approximately 30 minutes.",
-    category: "Maintenance",
-    priority: "Medium",
-    datePosted: "2023-06-05",
-    postedBy: "Alex Morgan",
-    properties: ["All Properties"]
+    type: "info",
+    priority: "medium",
+    societyId: "society1",
+    createdBy: "user1",
+    createdAt: new Date("2023-06-05"),
+    updatedAt: new Date("2023-06-05"),
+    startDate: new Date("2023-06-20"),
+    endDate: new Date("2023-06-21"),
+    isImportant: true
   },
   {
-    id: 2,
+    id: "2",
     title: "Pool Closure for Cleaning",
     content: "The community pool will be closed for cleaning and maintenance from June 15th to June 17th. We apologize for any inconvenience.",
-    category: "Amenities",
-    priority: "Low",
-    datePosted: "2023-06-08",
-    postedBy: "Alex Morgan",
-    properties: ["Sunset Apartments", "Oceanview Residences"]
+    type: "warning",
+    priority: "low",
+    societyId: "society1",
+    createdBy: "user1",
+    createdAt: new Date("2023-06-08"),
+    updatedAt: new Date("2023-06-08"),
+    startDate: new Date("2023-06-15"),
+    endDate: new Date("2023-06-17"),
+    isImportant: false
   },
   {
-    id: 3,
+    id: "3",
     title: "Fire Alarm Testing",
     content: "Mandatory fire alarm testing will be conducted on June 22nd from 10 AM to 12 PM. Brief alarm sounds will occur during this period.",
-    category: "Safety",
-    priority: "High",
-    datePosted: "2023-06-10",
-    postedBy: "Building Safety Officer",
-    properties: ["Highland Towers", "Park Place Residences"]
+    type: "error",
+    priority: "high",
+    societyId: "society1",
+    createdBy: "user2",
+    createdAt: new Date("2023-06-10"),
+    updatedAt: new Date("2023-06-10"),
+    startDate: new Date("2023-06-22"),
+    endDate: new Date("2023-06-22"),
+    isImportant: true
   },
   {
-    id: 4,
+    id: "4",
     title: "New Package Delivery System",
     content: "We're implementing a new digital package notification system starting July 1st. Please register your email to receive delivery notifications.",
-    category: "Building Update",
-    priority: "Medium",
-    datePosted: "2023-06-12",
-    postedBy: "Management Office",
-    properties: ["All Properties"]
+    type: "info",
+    priority: "medium",
+    societyId: "society1",
+    createdBy: "user1",
+    createdAt: new Date("2023-06-12"),
+    updatedAt: new Date("2023-06-12"),
+    startDate: new Date("2023-07-01"),
+    endDate: new Date("2023-07-01"),
+    isImportant: false
   },
   {
-    id: 5,
+    id: "5",
     title: "Resident Summer BBQ",
     content: "Join us for our annual summer BBQ on July 8th from 4 PM to 8 PM in the courtyard. Food and refreshments will be provided.",
-    category: "Community Event",
-    priority: "Low",
-    datePosted: "2023-06-15",
-    postedBy: "Community Manager",
-    properties: ["Sunset Apartments"]
+    type: "info",
+    priority: "low",
+    societyId: "society1",
+    createdBy: "user3",
+    createdAt: new Date("2023-06-15"),
+    updatedAt: new Date("2023-06-15"),
+    startDate: new Date("2023-07-08"),
+    endDate: new Date("2023-07-08"),
+    isImportant: false
   }
 ];
 

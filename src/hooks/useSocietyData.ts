@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { societyAPI } from "@/utils/api";
 
-export function useSocietyData(profileId: string | undefined) {
+export function useSocietyData(userId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [society, setSociety] = useState<any>(null);
   const { toast } = useToast();
@@ -19,90 +18,36 @@ export function useSocietyData(profileId: string | undefined) {
 
   useEffect(() => {
     const fetchSociety = async () => {
-      // Safely check if profile is available
-      if (!profileId) {
+      // Safely check if user is available
+      if (!userId) {
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        console.log("Fetching society for profile ID:", profileId);
-        
-        // First check for society created by user as admin
-        const { data: adminSociety, error: adminError } = await supabase
-          .from('societies')
-          .select('*')
-          .eq('created_by', profileId)
-          .maybeSingle();
+        console.log("Fetching society for user ID:", userId);
 
-        if (adminError) {
-          console.error("Error fetching admin society:", adminError);
-          showError(
-            "Error",
-            "Failed to fetch society information. Please try again."
-          );
-          return;
-        }
+        // Use the API to fetch society data
+        const societyData = await societyAPI.get(userId);
 
-        if (adminSociety) {
-          console.log("Found admin society:", adminSociety);
-          setSociety(adminSociety);
-          return;
-        }
-
-        // If not found as admin, check profile for society_id
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('society_id')
-          .eq('id', profileId)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-          showError(
-            "Error",
-            "Failed to fetch profile information. Please try again."
-          );
-          return;
-        }
-
-        if (profileData?.society_id) {
-          console.log("Checking society from profile society_id:", profileData.society_id);
-          const { data: societyData, error: societyError } = await supabase
-            .from('societies')
-            .select('*')
-            .eq('id', profileData.society_id)
-            .maybeSingle();
-
-          if (societyError) {
-            console.error("Error fetching society by ID:", societyError);
-            showError(
-              "Error",
-              "Failed to fetch society information. Please try again."
-            );
-            return;
-          }
-          
-          if (societyData) {
-            console.log("Found society from profile:", societyData);
-            setSociety(societyData);
-          }
+        if (societyData) {
+          console.log("Found society data:", societyData);
+          setSociety(societyData);
         }
       } catch (error: any) {
-        console.error("Unexpected error in fetchSociety:", error);
+        console.error("Error fetching society:", error);
         showError(
           "Error",
-          "An unexpected error occurred. Please try again later."
+          error.message || "An unexpected error occurred. Please try again later."
         );
       } finally {
-        // Always set loading to false when done
         setLoading(false);
       }
     };
 
     fetchSociety();
-  }, [profileId, toast]);
+  }, [userId, toast]);
 
   return { society, setSociety, loading };
 }

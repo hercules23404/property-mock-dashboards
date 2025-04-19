@@ -14,7 +14,7 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <p className="text-muted-foreground">Welcome back! Here's your society overview.</p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Properties"
@@ -37,10 +37,10 @@ const AdminDashboard = () => {
             icon={<Bell className="h-8 w-8" />}
           />
         </div>
-        
-        <ActivityList 
-          activities={mockActivities.admin} 
-          title="Recent Activities" 
+
+        <ActivityList
+          activities={mockActivities.admin}
+          title="Recent Activities"
         />
       </div>
     </DashboardLayout>

@@ -1,67 +1,106 @@
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import Login from "./pages/auth/Login";
-import Signup from "./pages/auth/Signup";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+// Layouts
+import DashboardLayout from './layouts/DashboardLayout';
+import AuthLayout from './layouts/AuthLayout';
 
-// Admin pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import SocietyManagement from "./pages/admin/SocietyManagement";
-import TenantManagement from "./pages/admin/TenantManagement";
-import PropertyListings from "./pages/admin/PropertyListings";
-import MaintenanceRequests from "./pages/admin/MaintenanceRequests";
-import NoticeBoard from "./pages/admin/NoticeBoard";
+// Pages
+import Index from './pages/Index';
+import NotFound from './pages/NotFound';
 
-// Tenant pages
-import TenantDashboard from "./pages/tenant/TenantDashboard";
-import MyProperty from "./pages/tenant/MyProperty";
-import TenantMaintenance from "./pages/tenant/TenantMaintenance";
-import TenantNotices from "./pages/tenant/TenantNotices";
-import MyDocuments from "./pages/tenant/MyDocuments";
+// Auth Pages
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
+import AdminSignup from './pages/auth/AdminSignup';
 
-const queryClient = new QueryClient();
+// Dashboard Pages
+import Dashboard from './pages/dashboard/Dashboard';
+import Societies from './pages/dashboard/Societies';
+import Tenants from './pages/dashboard/Tenants';
+import Maintenance from './pages/dashboard/Maintenance';
+import Notices from './pages/dashboard/Notices';
+import Profile from './pages/dashboard/Profile';
 
-const App = () => (
-  <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+// Tenant Pages
+import TenantDashboard from './pages/tenant/TenantDashboard';
+import MyProperty from './pages/tenant/MyProperty';
+import TenantNotices from './pages/tenant/TenantNotices';
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiredRole?: 'admin' | 'tenant';
+}
+
+// Protected Route Component
+const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  // Check if user has the required role
+  if (requiredRole && user.role !== requiredRole) {
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/tenant'} />;
+  }
+
+  return <DashboardLayout role={user.role}>{children}</DashboardLayout>;
+};
+
+function App() {
+  const { user } = useAuth();
+
+  return (
+    <Router>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/" element={<Index />} />
+        <Toaster position="top-right" />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/tenant'} /> : <Index />} />
+
+          {/* Auth Routes */}
+          <Route element={<AuthLayout><Outlet /></AuthLayout>}>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/society" element={<Navigate to="/admin/society-management" replace />} />
-            <Route path="/admin/society-management" element={<SocietyManagement />} />
-            <Route path="/admin/tenant-management" element={<TenantManagement />} />
-            <Route path="/admin/property-listings" element={<PropertyListings />} />
-            <Route path="/admin/maintenance-requests" element={<MaintenanceRequests />} />
-            <Route path="/admin/notices" element={<NoticeBoard />} />
-            
-            {/* Tenant Routes */}
-            <Route path="/tenant" element={<TenantDashboard />} />
-            <Route path="/tenant/my-property" element={<MyProperty />} />
-            <Route path="/tenant/maintenance" element={<TenantMaintenance />} />
-            <Route path="/tenant/notices" element={<TenantNotices />} />
-            <Route path="/tenant/documents" element={<MyDocuments />} />
-            
-            {/* Catch-all route for 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
+            <Route path="/admin-signup" element={<AdminSignup />} />
+          </Route>
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/societies" element={<ProtectedRoute requiredRole="admin"><Societies /></ProtectedRoute>} />
+          <Route path="/tenants" element={<ProtectedRoute requiredRole="admin"><Tenants /></ProtectedRoute>} />
+
+          {/* Tenant Routes */}
+          <Route path="/tenant" element={<ProtectedRoute requiredRole="tenant"><TenantDashboard /></ProtectedRoute>} />
+          <Route path="/tenant/property" element={<ProtectedRoute requiredRole="tenant"><MyProperty /></ProtectedRoute>} />
+          <Route path="/tenant/notices" element={<ProtectedRoute requiredRole="tenant"><TenantNotices /></ProtectedRoute>} />
+
+          {/* Common Protected Routes */}
+          <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
+          <Route path="/notices" element={<ProtectedRoute><Notices /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </AuthProvider>
-    </QueryClientProvider>
-  </BrowserRouter>
-);
+    </Router>
+  );
+}
 
 export default App;

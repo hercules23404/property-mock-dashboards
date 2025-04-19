@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,29 +9,29 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, profile } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Allow a short delay to make sure auth state is fully loaded
     const timer = setTimeout(() => {
-      if (!user) {
+      if (!user && !loading) {
         navigate('/login');
         return;
       }
 
-      if (requiredRole && profile?.role !== requiredRole) {
-        navigate(profile?.role === 'admin' ? '/admin' : '/tenant');
+      if (requiredRole && user?.role !== requiredRole) {
+        navigate(user?.role === 'admin' ? '/admin' : '/tenant');
       }
-      
+
       setIsLoading(false);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [user, profile, requiredRole, navigate]);
+  }, [user, loading, requiredRole, navigate]);
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -40,7 +39,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user || (requiredRole && profile?.role !== requiredRole)) {
+  if (!user || (requiredRole && user.role !== requiredRole)) {
     return null;
   }
 

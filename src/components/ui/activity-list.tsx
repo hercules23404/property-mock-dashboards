@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Activity {
@@ -35,7 +34,7 @@ export const ActivityList = ({ activities, title }: ActivityListProps) => {
                   {activity.time}
                 </span>
               </div>
-              <div className="mt-2 border-b border-border" />
+              <div className="mt-2 border-b border-[hsl(var(--border))]" />
             </div>
           ))}
         </div>

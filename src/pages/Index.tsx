@@ -1,187 +1,175 @@
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Building2, Users, Bell, Settings, FileText, Shield, ArrowRight } from 'lucide-react';
 
-import { useNavigate } from "react-router-dom";
-import { BuildingIcon, UserIcon, Shield, Home, Users, Key, FileText, BarChart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const Index = () => {
+const Index: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'admin' ? '/admin' : '/tenant');
+    }
+  }, [user, navigate]);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-semibold text-pm-gray-dark">
-            PropertyManage<span className="text-pm-blue">Pro</span>
-          </h1>
-          <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/admin")} 
-              className="flex items-center gap-2"
+      <header className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Building2 className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold text-gray-900">PropertyManagePro</h1>
+          </div>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => navigate('/admin-signup')}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
-              <Shield className="h-4 w-4" />
               Admin Demo
-            </Button>
-            <Button 
-              onClick={() => navigate("/tenant")} 
-              className="flex items-center gap-2"
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors"
             >
-              <Key className="h-4 w-4" />
-              Tenant Demo
-            </Button>
+              Login
+            </button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-blue-100 py-12 md:py-24">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-pm-gray-dark">
-            Property Management <span className="text-pm-blue">Simplified</span>
-          </h1>
-          <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto text-pm-gray-dark">
-            A comprehensive platform for landlords, property managers, and tenants to streamline rental operations and enhance communication.
-          </p>
-          <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              onClick={() => navigate("/admin")} 
-              className="flex items-center gap-2 text-lg"
-            >
-              <BuildingIcon className="h-5 w-5" />
-              Admin Dashboard
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              onClick={() => navigate("/tenant")} 
-              className="flex items-center gap-2 text-lg"
-            >
-              <UserIcon className="h-5 w-5" />
-              Tenant Portal
-            </Button>
+      <section className="relative py-20 bg-gradient-to-r from-blue-500 to-indigo-600 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-grid-white/10" />
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-5xl font-bold mb-6">Property Management Simplified</h1>
+            <p className="text-xl mb-8 text-blue-100">
+              Streamline your property management operations with our comprehensive platform
+            </p>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => navigate('/admin-signup')}
+                className="px-6 py-3 bg-white text-primary rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center"
+              >
+                Get Started as Admin
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </button>
+              <button
+                onClick={() => navigate('/signup')}
+                className="px-6 py-3 border-2 border-white text-white rounded-lg font-medium hover:bg-white/10 transition-colors"
+              >
+                Join as Tenant
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-white">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Platform Features</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FeatureCard
-              title="Property Management"
-              description="Easily manage multiple properties, units, and common areas from a centralized dashboard."
-              icon={<Home className="h-12 w-12 text-pm-blue" />}
-            />
-            <FeatureCard
-              title="Tenant Management"
-              description="Keep track of tenant information, lease agreements, rent payments, and communication history."
-              icon={<Users className="h-12 w-12 text-pm-blue" />}
-            />
-            <FeatureCard
-              title="Maintenance Requests"
-              description="Submit, track, and manage maintenance requests with priority levels and status updates."
-              icon={<BuildingIcon className="h-12 w-12 text-pm-blue" />}
-            />
-            <FeatureCard
-              title="Document Management"
-              description="Store and organize important documents like leases, inspections, and insurance policies."
-              icon={<FileText className="h-12 w-12 text-pm-blue" />}
-            />
-            <FeatureCard
-              title="Notice Board"
-              description="Share important announcements, updates, and community information with tenants."
-              icon={<BuildingIcon className="h-12 w-12 text-pm-blue" />}
-            />
-            <FeatureCard
-              title="Analytics & Reports"
-              description="Access insightful data on occupancy rates, rental income, expenses, and maintenance trends."
-              icon={<BarChart className="h-12 w-12 text-pm-blue" />}
-            />
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything You Need</h2>
+            <p className="text-xl text-gray-600">Manage your properties efficiently with our comprehensive features</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <Building2 className="h-12 w-12 text-primary" />,
+                title: 'Property Management',
+                description: 'Efficiently manage multiple properties with detailed tracking and reporting'
+              },
+              {
+                icon: <Users className="h-12 w-12 text-primary" />,
+                title: 'Tenant Management',
+                description: 'Streamline tenant onboarding, communication, and document management'
+              },
+              {
+                icon: <Bell className="h-12 w-12 text-primary" />,
+                title: 'Maintenance Requests',
+                description: 'Track and manage maintenance requests with real-time updates'
+              },
+              {
+                icon: <FileText className="h-12 w-12 text-primary" />,
+                title: 'Document Management',
+                description: 'Secure storage and easy access to all property-related documents'
+              },
+              {
+                icon: <Settings className="h-12 w-12 text-primary" />,
+                title: 'Automated Workflows',
+                description: 'Automate routine tasks and streamline your operations'
+              },
+              {
+                icon: <Shield className="h-12 w-12 text-primary" />,
+                title: 'Secure Platform',
+                description: 'Enterprise-grade security to protect your data and privacy'
+              }
+            ].map((feature, index) => (
+              <div
+                key={index}
+                className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
+              >
+                <div className="mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Role Section */}
-      <section className="bg-gray-50 py-16">
+      {/* Role Selection Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Choose Your Role</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <RoleCard 
-              title="Property Manager"
-              description="Access comprehensive tools to manage properties, tenants, maintenance, and finances."
-              icon={<Shield className="h-16 w-16 text-pm-blue" />}
-              buttonText="Admin Dashboard"
-              onClick={() => navigate("/admin")}
-            />
-            <RoleCard 
-              title="Tenant"
-              description="View your property details, submit maintenance requests, access documents, and receive notices."
-              icon={<Key className="h-16 w-16 text-pm-teal" />}
-              buttonText="Tenant Portal"
-              onClick={() => navigate("/tenant")}
-            />
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Choose Your Role</h2>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-white rounded-xl shadow-sm p-8 hover:shadow-md transition-shadow">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Property Manager</h3>
+                <p className="text-gray-600 mb-6">
+                  Manage multiple properties, handle maintenance requests, and communicate with tenants efficiently.
+                </p>
+                <button
+                  onClick={() => navigate('/admin-signup')}
+                  className="w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Get Started
+                </button>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-8 hover:shadow-md transition-shadow">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Tenant</h3>
+                <p className="text-gray-600 mb-6">
+                  Pay rent online, submit maintenance requests, and stay updated with property notices.
+                </p>
+                <button
+                  onClick={() => navigate('/signup')}
+                  className="w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Join Now
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-800 text-white py-8 mt-auto">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-xl font-semibold mb-2">PropertyManagePro</h2>
-          <p className="text-slate-300">A demonstration wireframe for a property management application</p>
-          <p className="text-slate-400 mt-4 text-sm">© 2023 PropertyManagePro. All rights reserved.</p>
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <Building2 className="h-6 w-6 text-primary" />
+              <span className="text-xl font-bold">PropertyManagePro</span>
+            </div>
+            <div className="text-gray-400">
+              © {new Date().getFullYear()} PropertyManagePro. All rights reserved.
+            </div>
+          </div>
         </div>
       </footer>
     </div>
-  );
-};
-
-const FeatureCard = ({ title, description, icon }: { title: string, description: string, icon: React.ReactNode }) => {
-  return (
-    <Card className="border border-gray-200 transition-all hover:shadow-md">
-      <CardContent className="pt-6">
-        <div className="flex flex-col items-center text-center">
-          <div className="mb-4 rounded-full bg-blue-50 p-3">{icon}</div>
-          <h3 className="text-xl font-semibold mb-2">{title}</h3>
-          <p className="text-gray-600">{description}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const RoleCard = ({ 
-  title, 
-  description, 
-  icon, 
-  buttonText, 
-  onClick 
-}: { 
-  title: string, 
-  description: string, 
-  icon: React.ReactNode, 
-  buttonText: string, 
-  onClick: () => void 
-}) => {
-  return (
-    <Card className="border border-gray-200 hover:shadow-lg transition-all">
-      <CardHeader className="text-center pt-6">
-        <div className="mx-auto mb-4">{icon}</div>
-        <CardTitle className="text-2xl">{title}</CardTitle>
-        <CardDescription className="text-base">{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex justify-center pb-6">
-        <Button onClick={onClick} size="lg" className="px-8">
-          {buttonText}
-        </Button>
-      </CardContent>
-    </Card>
   );
 };
 
