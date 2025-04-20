@@ -21,19 +21,19 @@ interface DashboardLayoutProps {
 
 const adminNavigationItems = [
   { name: "Dashboard", href: "/admin", icon: User },
-  { name: "Society Management", href: "/admin/society-management", icon: User },
-  { name: "Tenant Management", href: "/admin/tenant-management", icon: User },
-  { name: "Property Listings", href: "/admin/property-listings", icon: User },
-  { name: "Maintenance Requests", href: "/admin/maintenance-requests", icon: User },
-  { name: "Notice Board", href: "/admin/notices", icon: User },
+  { name: "Societies", href: "/societies", icon: User },
+  { name: "Tenants", href: "/tenants", icon: User },
+  { name: "Maintenance", href: "/maintenance", icon: User },
+  { name: "Notices", href: "/notices", icon: User },
+  { name: "Profile", href: "/profile", icon: User },
 ];
 
 const tenantNavigationItems = [
   { name: "Dashboard", href: "/tenant", icon: User },
   { name: "My Property", href: "/tenant/property", icon: User },
-  { name: "Maintenance", href: "/tenant/maintenance", icon: User },
+  { name: "Maintenance", href: "/maintenance", icon: User },
   { name: "Notices", href: "/tenant/notices", icon: User },
-  { name: "Documents", href: "/tenant/documents", icon: User },
+  { name: "Profile", href: "/profile", icon: User },
 ];
 
 export const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {

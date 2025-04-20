@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
@@ -33,6 +33,11 @@ import TenantDashboard from './pages/tenant/TenantDashboard';
 import MyProperty from './pages/tenant/MyProperty';
 import TenantNotices from './pages/tenant/TenantNotices';
 
+// Admin Pages
+import ManageSocieties from './pages/admin/ManageSocieties';
+import ManageNotices from './pages/admin/ManageNotices';
+import ManageTenants from './pages/admin/ManageTenants';
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'admin' | 'tenant';
@@ -51,55 +56,100 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
   // Check if user has the required role
   if (requiredRole && user.role !== requiredRole) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/tenant'} />;
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/tenant'} replace />;
   }
 
   return <DashboardLayout role={user.role}>{children}</DashboardLayout>;
 };
 
+// Create the router configuration
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Index />,
+  },
+  {
+    path: '/login',
+    element: <AuthLayout><Login /></AuthLayout>,
+  },
+  {
+    path: '/signup',
+    element: <AuthLayout><Signup /></AuthLayout>,
+  },
+  {
+    path: '/admin-signup',
+    element: <AuthLayout><AdminSignup /></AuthLayout>,
+  },
+  {
+    path: '/admin',
+    element: <ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/societies',
+    element: <ProtectedRoute requiredRole="admin"><ManageSocieties /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/notices',
+    element: <ProtectedRoute requiredRole="admin"><ManageNotices /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/tenants',
+    element: <ProtectedRoute requiredRole="admin"><ManageTenants /></ProtectedRoute>,
+  },
+  {
+    path: '/societies',
+    element: <ProtectedRoute requiredRole="admin"><Societies /></ProtectedRoute>,
+  },
+  {
+    path: '/tenants',
+    element: <ProtectedRoute requiredRole="admin"><Tenants /></ProtectedRoute>,
+  },
+  {
+    path: '/tenant',
+    element: <ProtectedRoute requiredRole="tenant"><TenantDashboard /></ProtectedRoute>,
+  },
+  {
+    path: '/tenant/property',
+    element: <ProtectedRoute requiredRole="tenant"><MyProperty /></ProtectedRoute>,
+  },
+  {
+    path: '/tenant/notices',
+    element: <ProtectedRoute requiredRole="tenant"><TenantNotices /></ProtectedRoute>,
+  },
+  {
+    path: '/maintenance',
+    element: <ProtectedRoute><Maintenance /></ProtectedRoute>,
+  },
+  {
+    path: '/notices',
+    element: <ProtectedRoute><Notices /></ProtectedRoute>,
+  },
+  {
+    path: '/profile',
+    element: <ProtectedRoute><Profile /></ProtectedRoute>,
+  },
+  {
+    path: '*',
+    element: <NotFound />,
+  },
+], {
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  },
+});
+
 function App() {
-  const { user } = useAuth();
-
   return (
-    <Router>
-      <AuthProvider>
-        <Toaster position="top-right" />
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/tenant'} /> : <Index />} />
-
-          {/* Auth Routes */}
-          <Route element={<AuthLayout><Outlet /></AuthLayout>}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/admin-signup" element={<AdminSignup />} />
-          </Route>
-
-          {/* Admin Routes */}
-          <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/societies" element={<ProtectedRoute requiredRole="admin"><Societies /></ProtectedRoute>} />
-          <Route path="/tenants" element={<ProtectedRoute requiredRole="admin"><Tenants /></ProtectedRoute>} />
-
-          {/* Tenant Routes */}
-          <Route path="/tenant" element={<ProtectedRoute requiredRole="tenant"><TenantDashboard /></ProtectedRoute>} />
-          <Route path="/tenant/property" element={<ProtectedRoute requiredRole="tenant"><MyProperty /></ProtectedRoute>} />
-          <Route path="/tenant/notices" element={<ProtectedRoute requiredRole="tenant"><TenantNotices /></ProtectedRoute>} />
-
-          {/* Common Protected Routes */}
-          <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
-          <Route path="/notices" element={<ProtectedRoute><Notices /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-
-          {/* 404 Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <Toaster position="top-right" />
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }
 

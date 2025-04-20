@@ -1,4 +1,4 @@
-import { db } from '@/integrations/firebase/config';
+import { firestore as db } from '@/lib/firebase';
 import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where, addDoc, Timestamp, deleteDoc } from 'firebase/firestore';
 import { Payment, PaymentReceipt, PaymentReminder, PaymentHistory } from '@/types/payment';
 

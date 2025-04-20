@@ -9,6 +9,14 @@ export interface Notice {
     createdAt: Date;
     updatedAt: Date;
     startDate: Date;
-    endDate?: Date;
-    isImportant?: boolean;
+    endDate: Date;
+    isImportant: boolean;
+}
+
+export interface Comment {
+    id: string;
+    noticeId: string;
+    content: string;
+    createdBy: string;
+    createdAt: Date;
 } 

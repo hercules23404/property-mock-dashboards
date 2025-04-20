@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,12 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn, signInWithGoogle, user } = useAuth();
 
+  useEffect(() => {
+    if (user) {
+      handleRedirect(user);
+    }
+  }, [user]);
+
   const handleRedirect = (user: any) => {
     if (user.role === 'admin') {
       navigate('/admin');
@@ -31,11 +37,7 @@ const Login = () => {
 
     try {
       await signIn(email, password);
-      const { user } = useAuth();
-      if (user) {
-        toast.success("Logged in successfully");
-        handleRedirect(user);
-      }
+      toast.success("Logged in successfully");
     } catch (error: any) {
       console.error("Login error:", error);
       toast.error(error.message || "Failed to login");
@@ -48,11 +50,7 @@ const Login = () => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      const { user } = useAuth();
-      if (user) {
-        toast.success("Logged in successfully with Google");
-        handleRedirect(user);
-      }
+      toast.success("Logged in successfully with Google");
     } catch (error: any) {
       console.error("Google login error:", error);
       toast.error(error.message || "Failed to login with Google");

@@ -6,15 +6,17 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  updateProfile,
 } from "firebase/auth";
-import { auth, googleProvider } from '@/integrations/firebase/config';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/integrations/firebase/config';
+import { auth, googleProvider, firestore as db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 // Extend the Firebase User type
 interface User extends FirebaseUser {
   role?: 'admin' | 'tenant';
   name?: string;
+  societyId?: string;
+  societyName?: string;
 }
 
 interface AuthContextType {
@@ -24,6 +26,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, name: string, role?: 'admin' | 'tenant') => Promise<void>;
   signOut: () => Promise<void>;
+  updateUserSociety: (societyId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -33,6 +36,7 @@ const AuthContext = createContext<AuthContextType>({
   signInWithGoogle: async () => { },
   signUp: async () => { },
   signOut: async () => { },
+  updateUserSociety: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -53,9 +57,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...firebaseUser,
           role: userData?.role || 'tenant',
           name: userData?.name || firebaseUser.displayName,
+          societyId: userData?.societyId || '',
+          societyName: userData?.societyName || '',
         };
 
         setUser(enhancedUser);
+
+        // Set up real-time listener for user updates
+        const userUnsubscribe = onSnapshot(doc(db, 'users', firebaseUser.uid), (doc) => {
+          if (doc.exists()) {
+            const updatedData = doc.data();
+            setUser(prev => ({
+              ...prev!,
+              role: updatedData.role || prev?.role,
+              name: updatedData.name || prev?.name,
+              societyId: updatedData.societyId || prev?.societyId,
+              societyName: updatedData.societyName || prev?.societyName,
+            }));
+          }
+        });
+
+        return () => userUnsubscribe();
       } else {
         setUser(null);
       }
@@ -95,16 +117,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, name: string, role: 'admin' | 'tenant' = 'tenant') => {
     try {
+      // First create the user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Update the user's display name in Firebase Auth
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: name,
+        });
+      }
+
+      // Then create the user document in Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         email,
         name,
         role,
         createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+        // Additional fields for admin users
+        ...(role === 'admin' && {
+          permissions: ['manage_societies', 'manage_tenants', 'manage_notices', 'manage_maintenance'],
+          isSuperAdmin: false,
+        }),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing up:', error);
-      throw error;
+      // Handle specific Firebase errors
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('This email is already registered. Please use a different email or sign in.');
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error('Password should be at least 6 characters long.');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('Please enter a valid email address.');
+      } else {
+        throw new Error('An error occurred during signup. Please try again.');
+      }
     }
   };
 
@@ -117,6 +165,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserSociety = async (societyId: string) => {
+    if (!user) return;
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, {
+        societyId,
+        updatedAt: new Date(),
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error updating user society:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -125,6 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signInWithGoogle,
       signUp,
       signOut: handleSignOut,
+      updateUserSociety,
     }}>
       {children}
     </AuthContext.Provider>
