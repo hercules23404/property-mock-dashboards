@@ -40,9 +40,13 @@ export default defineConfig(({ mode }) => ({
   esbuild: {
     logOverride: { 'this-is-undefined-in-esm': 'silent' }
   },
-  // Add custom TypeScript configuration
-  // This helps bypass the reference to tsconfig.node.json
+  // Add custom TypeScript configuration to bypass tsconfig.node.json reference
   define: {
     'process.env': {},
+  },
+  // Explicitly set TypeScript compiler options
+  compilerOptions: {
+    composite: false,  // Disable project references
+    incremental: true, // Enable incremental compilation
   },
 }));
