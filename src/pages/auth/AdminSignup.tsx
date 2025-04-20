@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,8 +24,8 @@ export default function AdminSignup() {
         try {
             // Create admin account with role set to 'admin'
             await signUp(email, password, name, 'admin');
-            toast.success('Admin account created successfully');
-            navigate('/login');
+            toast.success('Admin account created successfully! You can now create your society.');
+            navigate('/admin');
         } catch (error: any) {
             toast.error(error.message || 'Failed to create admin account');
         } finally {
@@ -91,14 +92,7 @@ export default function AdminSignup() {
                         Login
                     </Link>
                 </div>
-
-                <div className="text-center text-sm">
-                    Are you a tenant?{' '}
-                    <Link to="/signup" className="text-primary hover:underline">
-                        Create tenant account
-                    </Link>
-                </div>
             </form>
         </AuthLayout>
     );
-} 
+}

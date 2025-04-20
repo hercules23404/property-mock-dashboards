@@ -1,256 +1,376 @@
 
-import React, { useState } from "react";
-import { PlusCircle, Search, UserPlus, FileText, Mail } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PageHeader } from "@/components/ui/page-header";
-import { SearchFilters } from "@/components/ui/search-filters";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { mockTenants } from "@/utils/mockData";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { firestore, auth } from '@/lib/firebase';
+import { collection, addDoc, getDoc, getDocs, query, where, doc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { sendWelcomeEmail } from '@/lib/email';
+import { Loader2, ArrowLeft, UserPlus, Users, Building } from 'lucide-react';
+import StatisticsCard from '@/components/dashboard/StatisticsCard';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { supabase } from '@/lib/supabase';
 
-const TenantManagement = () => {
-  const [open, setOpen] = useState(false);
+interface TenantFormData {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    unitNumber: string;
+}
 
-  return (
-    <DashboardLayout role="admin">
-      <div className="space-y-6">
-        <PageHeader 
-          title="Tenant Management"
-          description="View and manage tenant information"
-          action={{
-            label: "Add Tenant",
-            icon: <PlusCircle className="h-4 w-4" />,
-            onClick: () => setOpen(true),
-          }}
-        />
+interface Tenant {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    unitNumber: string;
+    createdAt: any;
+}
+
+interface Society {
+    id: string;
+    name: string;
+    address: string;
+    totalUnits: number;
+    occupiedUnits: number;
+}
+
+const TenantManagement: React.FC = () => {
+    const { societyId } = useParams<{ societyId: string }>();
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const [society, setSociety] = useState<Society | null>(null);
+    const [tenants, setTenants] = useState<Tenant[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [formData, setFormData] = useState<TenantFormData>({
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
+        unitNumber: '',
+    });
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!societyId || !user) return;
+            
+            try {
+                setLoading(true);
+                
+                // Fetch society details
+                const societyDoc = await getDoc(doc(firestore, 'societies', societyId));
+                if (societyDoc.exists()) {
+                    setSociety({
+                        id: societyDoc.id,
+                        ...societyDoc.data()
+                    } as Society);
+                } else {
+                    toast.error("Society not found");
+                    navigate('/admin');
+                    return;
+                }
+                
+                // Fetch tenants for this society
+                const tenantsRef = collection(firestore, 'profiles');
+                const q = query(tenantsRef, where("societyId", "==", societyId), where("role", "==", "tenant"));
+                const querySnapshot = await getDocs(q);
+                
+                const tenantsData = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    createdAt: doc.data().createdAt?.toDate()
+                })) as Tenant[];
+                
+                setTenants(tenantsData);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                toast.error("Failed to load data");
+            } finally {
+                setLoading(false);
+            }
+        };
         
-        <SearchFilters 
-          placeholder="Search tenants..." 
-          filtersContent={
-            <>
-              <DropdownMenuCheckboxItem checked>All Tenants</DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem>Active Leases</DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem>Expired Leases</DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem>Rent Paid</DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem>Rent Pending</DropdownMenuCheckboxItem>
-            </>
-          } 
-        />
+        fetchData();
+    }, [societyId, user, navigate]);
 
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Property/Unit</TableHead>
-                <TableHead>Lease Period</TableHead>
-                <TableHead>Rent Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockTenants.map((tenant) => (
-                <TableRow key={tenant.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden">
-                        <img src={tenant.avatar} alt={tenant.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{tenant.name}</p>
-                        <p className="text-sm text-muted-foreground">{tenant.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <p>{tenant.property}</p>
-                    <p className="text-sm text-muted-foreground">Unit {tenant.unit}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p>{new Date(tenant.moveInDate).toLocaleDateString()}</p>
-                    <p className="text-sm text-muted-foreground">to {new Date(tenant.leaseEnd).toLocaleDateString()}</p>
-                  </TableCell>
-                  <TableCell>
-                    <RentStatusBadge status={tenant.rentStatus} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          Actions
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Tenant Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" /> View Lease
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Mail className="mr-2 h-4 w-4" /> Contact Tenant
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" /> Edit Details
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <Button variant="outline" size="sm">
-            Previous
-          </Button>
-          <Button variant="outline" size="sm">
-            Next
-          </Button>
-        </div>
+    const generateRandomPassword = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let password = '';
+        for (let i = 0; i < 10; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return password;
+    };
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-[525px]">
-            <DialogHeader>
-              <DialogTitle>Add New Tenant</DialogTitle>
-              <DialogDescription>
-                Enter the details of the new tenant.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tenant-name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  id="tenant-name"
-                  placeholder="Full name"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tenant-email" className="text-right">
-                  Email
-                </Label>
-                <Input
-                  id="tenant-email"
-                  type="email"
-                  placeholder="Email address"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tenant-phone" className="text-right">
-                  Phone
-                </Label>
-                <Input
-                  id="tenant-phone"
-                  placeholder="Phone number"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tenant-property" className="text-right">
-                  Property
-                </Label>
-                <Input
-                  id="tenant-property"
-                  placeholder="Select property"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tenant-unit" className="text-right">
-                  Unit
-                </Label>
-                <Input
-                  id="tenant-unit"
-                  placeholder="Unit number"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="lease-start" className="text-right">
-                  Lease Start
-                </Label>
-                <Input
-                  id="lease-start"
-                  type="date"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="lease-end" className="text-right">
-                  Lease End
-                </Label>
-                <Input
-                  id="lease-end"
-                  type="date"
-                  className="col-span-3"
-                />
-              </div>
+    const handleCreateTenant = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!societyId || !society) return;
+        
+        try {
+            setCreating(true);
+            
+            // Generate a random password if none provided
+            const tenantPassword = formData.password || generateRandomPassword();
+            
+            // Create the user in Firebase Auth
+            const { data: userData, error: authError } = await supabase.auth.signUp({
+                email: formData.email,
+                password: tenantPassword,
+            });
+            
+            if (authError) throw authError;
+            if (!userData.user) throw new Error("Failed to create user account");
+            
+            // Create tenant profile in Firestore
+            const tenantData = {
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                unitNumber: formData.unitNumber,
+                societyId: societyId,
+                societyName: society.name,
+                role: 'tenant',
+                createdAt: new Date(),
+                createdBy: user?.uid,
+            };
+            
+            // Create profile document
+            await addDoc(collection(firestore, 'profiles'), {
+                id: userData.user.id,
+                ...tenantData
+            });
+            
+            // Create role entry
+            await addDoc(collection(firestore, 'user_roles'), {
+                user_id: userData.user.id,
+                society_id: societyId,
+                role: 'tenant'
+            });
+            
+            // Send welcome email with credentials
+            await sendWelcomeEmail(formData.email, {
+                name: formData.name,
+                email: formData.email,
+                password: tenantPassword,
+                societyName: society.name
+            });
+            
+            // Update UI
+            setTenants(prev => [
+                ...prev,
+                {
+                    id: userData.user.id,
+                    ...tenantData,
+                    createdAt: new Date()
+                } as Tenant
+            ]);
+            
+            // Reset form & close dialog
+            setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                password: '',
+                unitNumber: '',
+            });
+            
+            setOpen(false);
+            toast.success("Tenant added successfully! Welcome email sent.");
+        } catch (error: any) {
+            console.error("Error creating tenant:", error);
+            toast.error(error.message || "Failed to create tenant");
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-[60vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={() => setOpen(false)}>Save Tenant</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
-  );
-};
+        );
+    }
 
-const RentStatusBadge = ({ status }: { status: string }) => {
-  let variant:
-    | "default"
-    | "secondary"
-    | "destructive"
-    | "outline" = "default";
-  
-  switch (status) {
-    case "Paid":
-      variant = "default";
-      break;
-    case "Pending":
-      variant = "secondary";
-      break;
-    case "Late":
-      variant = "destructive";
-      break;
-    default:
-      variant = "outline";
-  }
-  
-  return <Badge variant={variant}>{status}</Badge>;
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                    <Button variant="outline" size="icon" onClick={() => navigate('/admin')}>
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <h1 className="text-3xl font-bold">{society?.name} - Tenant Management</h1>
+                </div>
+                
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                            <UserPlus className="mr-2 h-4 w-4" /> Add New Tenant
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[550px]">
+                        <DialogHeader>
+                            <DialogTitle>Add New Tenant</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleCreateTenant} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <Input
+                                    id="phone"
+                                    name="phone"
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="unitNumber">Unit Number</Label>
+                                <Input
+                                    id="unitNumber"
+                                    name="unitNumber"
+                                    value={formData.unitNumber}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="password">
+                                    Password (Optional - will be generated if left blank)
+                                </Label>
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                />
+                            </div>
+
+                            <div className="flex justify-end">
+                                <Button type="submit" disabled={creating}>
+                                    {creating ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        "Add Tenant"
+                                    )}
+                                </Button>
+                            </div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatisticsCard
+                    title="Total Units"
+                    value={society?.totalUnits.toString() || "0"}
+                    icon={<Building className="h-4 w-4 text-muted-foreground" />}
+                />
+                <StatisticsCard
+                    title="Occupied Units"
+                    value={society?.occupiedUnits.toString() || "0"}
+                    icon={<Users className="h-4 w-4 text-muted-foreground" />}
+                />
+                <StatisticsCard
+                    title="Total Tenants"
+                    value={tenants.length.toString()}
+                    icon={<Users className="h-4 w-4 text-muted-foreground" />}
+                />
+            </div>
+
+            {tenants.length === 0 ? (
+                <Card className="p-8">
+                    <div className="text-center space-y-4">
+                        <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <CardTitle>No Tenants Found</CardTitle>
+                        <p className="text-muted-foreground">You haven't added any tenants to this society yet.</p>
+                        <Button onClick={() => setOpen(true)}>
+                            <UserPlus className="mr-2 h-4 w-4" /> Add Your First Tenant
+                        </Button>
+                    </div>
+                </Card>
+            ) : (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Tenants</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-muted">
+                                    <tr>
+                                        <th className="text-left p-3">Name</th>
+                                        <th className="text-left p-3">Unit</th>
+                                        <th className="text-left p-3">Email</th>
+                                        <th className="text-left p-3">Phone</th>
+                                        <th className="text-left p-3">Added Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {tenants.map((tenant) => (
+                                        <tr key={tenant.id} className="border-b hover:bg-muted/50">
+                                            <td className="p-3">{tenant.name}</td>
+                                            <td className="p-3">{tenant.unitNumber}</td>
+                                            <td className="p-3">{tenant.email}</td>
+                                            <td className="p-3">{tenant.phone}</td>
+                                            <td className="p-3">
+                                                {tenant.createdAt instanceof Date 
+                                                    ? tenant.createdAt.toLocaleDateString() 
+                                                    : new Date(tenant.createdAt).toLocaleDateString()}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
 };
 
 export default TenantManagement;

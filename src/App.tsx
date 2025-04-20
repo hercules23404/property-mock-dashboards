@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
@@ -16,6 +17,7 @@ import NotFound from './pages/NotFound';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import AdminSignup from './pages/auth/AdminSignup';
+import TenantLogin from './pages/auth/TenantLogin';
 
 // Dashboard Pages
 import Dashboard from './pages/dashboard/Dashboard';
@@ -27,16 +29,14 @@ import Profile from './pages/dashboard/Profile';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import SocietyManagement from './pages/admin/SocietyManagement';
+import ManageNotices from './pages/admin/ManageNotices';
+import TenantManagement from './pages/admin/TenantManagement';
 
 // Tenant Pages
 import TenantDashboard from './pages/tenant/TenantDashboard';
 import MyProperty from './pages/tenant/MyProperty';
 import TenantNotices from './pages/tenant/TenantNotices';
-
-// Admin Pages
-import ManageSocieties from './pages/admin/ManageSocieties';
-import ManageNotices from './pages/admin/ManageNotices';
-import ManageTenants from './pages/admin/ManageTenants';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -64,7 +64,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     return <Navigate to={user.role === 'admin' ? '/admin' : '/tenant'} replace />;
   }
 
-  return <DashboardLayout role={user.role}>{children}</DashboardLayout>;
+  return <>{children}</>;
 };
 
 // Create the router configuration
@@ -86,24 +86,28 @@ const router = createBrowserRouter([
     element: <AuthLayout><AdminSignup /></AuthLayout>,
   },
   {
+    path: '/tenant-login',
+    element: <AuthLayout><TenantLogin /></AuthLayout>,
+  },
+  {
     path: '/admin',
     element: <ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>,
   },
   {
     path: '/admin/societies',
-    element: <ProtectedRoute requiredRole="admin"><ManageSocieties /></ProtectedRoute>,
+    element: <ProtectedRoute requiredRole="admin"><SocietyManagement /></ProtectedRoute>,
   },
   {
     path: '/admin/notices',
     element: <ProtectedRoute requiredRole="admin"><ManageNotices /></ProtectedRoute>,
   },
   {
-    path: '/admin/tenants',
-    element: <ProtectedRoute requiredRole="admin"><ManageTenants /></ProtectedRoute>,
+    path: '/admin/tenants/:societyId',
+    element: <ProtectedRoute requiredRole="admin"><TenantManagement /></ProtectedRoute>,
   },
   {
     path: '/societies',
-    element: <ProtectedRoute requiredRole="admin"><Societies /></ProtectedRoute>,
+    element: <ProtectedRoute requiredRole="admin"><SocietyManagement /></ProtectedRoute>,
   },
   {
     path: '/tenants',

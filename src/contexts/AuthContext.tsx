@@ -1,15 +1,16 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import {
   User as FirebaseUser,
   signInWithEmailAndPassword,
-  signOut,
+  signOut as firebaseSignOut,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
 } from "firebase/auth";
 import { auth, googleProvider, firestore as db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
 
 // Extend the Firebase User type
 interface User extends FirebaseUser {
@@ -26,7 +27,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, name: string, role?: 'admin' | 'tenant') => Promise<void>;
   signOut: () => Promise<void>;
-  updateUserSociety: (societyId: string) => Promise<void>;
+  updateUserSociety: (societyId: string, societyName?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -48,39 +49,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Get additional user data from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        const userData = userDoc.data();
+        try {
+          // Get user data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userData = userDoc.data();
 
-        // Combine Firebase user with Firestore data
-        const enhancedUser: User = {
-          ...firebaseUser,
-          role: userData?.role || 'tenant',
-          name: userData?.name || firebaseUser.displayName,
-          societyId: userData?.societyId || '',
-          societyName: userData?.societyName || '',
-        };
-
-        setUser(enhancedUser);
-
-        // Set up real-time listener for user updates
-        const userUnsubscribe = onSnapshot(doc(db, 'users', firebaseUser.uid), (doc) => {
-          if (doc.exists()) {
-            const updatedData = doc.data();
-            setUser(prev => ({
-              ...prev!,
-              role: updatedData.role || prev?.role,
-              name: updatedData.name || prev?.name,
-              societyId: updatedData.societyId || prev?.societyId,
-              societyName: updatedData.societyName || prev?.societyName,
-            }));
+          // Check for user_roles
+          const rolesRef = collection(db, 'user_roles');
+          const rolesQuery = query(rolesRef, where('user_id', '==', firebaseUser.uid));
+          const rolesSnapshot = await getDocs(rolesQuery);
+          
+          let societyId = userData?.societyId || '';
+          let societyName = userData?.societyName || '';
+          
+          // If we have a role entry with a society, use that instead
+          if (!rolesSnapshot.empty) {
+            const roleData = rolesSnapshot.docs[0].data();
+            if (roleData.society_id) {
+              societyId = roleData.society_id;
+              
+              // Fetch society name
+              const societyDoc = await getDoc(doc(db, 'societies', societyId));
+              if (societyDoc.exists()) {
+                societyName = societyDoc.data().name || '';
+              }
+            }
           }
-        });
 
-        return () => userUnsubscribe();
+          // Check for profile data
+          let profileData = null;
+          const profilesRef = collection(db, 'profiles');
+          const profileQuery = query(profilesRef, where('id', '==', firebaseUser.uid));
+          const profileSnapshot = await getDocs(profileQuery);
+          
+          if (!profileSnapshot.empty) {
+            profileData = profileSnapshot.docs[0].data();
+          }
+
+          // Combine Firebase user with Firestore data
+          const enhancedUser: User = {
+            ...firebaseUser,
+            role: profileData?.role || userData?.role || 'tenant',
+            name: profileData?.name || userData?.name || firebaseUser.displayName,
+            societyId: profileData?.societyId || societyId,
+            societyName: profileData?.societyName || societyName,
+          };
+
+          setUser(enhancedUser);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          // Basic user info if we can't get the enhanced data
+          setUser({
+            ...firebaseUser,
+            role: 'tenant',
+          });
+        }
       } else {
         setUser(null);
       }
+      
       setLoading(false);
     });
 
@@ -105,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await setDoc(doc(db, 'users', result.user.uid), {
           email: result.user.email,
           name: result.user.displayName,
-          role: 'tenant',
+          role: 'admin', // Default Google sign-in users to admin
           createdAt: new Date(),
         });
       }
@@ -135,11 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true,
-        // Additional fields for admin users
-        ...(role === 'admin' && {
-          permissions: ['manage_societies', 'manage_tenants', 'manage_notices', 'manage_maintenance'],
-          isSuperAdmin: false,
-        }),
       });
     } catch (error: any) {
       console.error('Error signing up:', error);
@@ -158,22 +180,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await firebaseSignOut(auth);
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
     }
   };
 
-  const updateUserSociety = async (societyId: string) => {
+  const updateUserSociety = async (societyId: string, societyName?: string) => {
     if (!user) return;
 
     try {
+      // Update in users collection
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
         societyId,
+        societyName,
         updatedAt: new Date(),
       }, { merge: true });
+      
+      // Update local user state
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        return {
+          ...prevUser,
+          societyId,
+          societyName: societyName || prevUser.societyName
+        };
+      });
     } catch (error) {
       console.error('Error updating user society:', error);
       throw error;

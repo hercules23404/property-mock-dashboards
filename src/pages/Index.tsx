@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,12 +25,6 @@ const Index: React.FC = () => {
           </div>
           <div className="flex space-x-4">
             <button
-              onClick={() => navigate('/admin-signup')}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Admin Demo
-            </button>
-            <button
               onClick={() => navigate('/login')}
               className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors"
             >
@@ -53,14 +48,14 @@ const Index: React.FC = () => {
                 onClick={() => navigate('/admin-signup')}
                 className="px-6 py-3 bg-white text-primary rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center"
               >
-                Get Started as Admin
+                Sign up as Admin
                 <ArrowRight className="ml-2 h-5 w-5" />
               </button>
               <button
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/tenant-login')}
                 className="px-6 py-3 border-2 border-white text-white rounded-lg font-medium hover:bg-white/10 transition-colors"
               >
-                Join as Tenant
+                Tenant Login
               </button>
             </div>
           </div>
@@ -135,19 +130,19 @@ const Index: React.FC = () => {
                   onClick={() => navigate('/admin-signup')}
                   className="w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
                 >
-                  Get Started
+                  Sign up as Admin
                 </button>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-8 hover:shadow-md transition-shadow">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">Tenant</h3>
                 <p className="text-gray-600 mb-6">
-                  Pay rent online, submit maintenance requests, and stay updated with property notices.
+                  Access property details, submit maintenance requests, and stay updated with property notices.
                 </p>
                 <button
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/tenant-login')}
                   className="w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
                 >
-                  Join Now
+                  Tenant Login
                 </button>
               </div>
             </div>
