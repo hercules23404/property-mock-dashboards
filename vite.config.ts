@@ -33,12 +33,16 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  // Add this section to override TypeScript handling
   optimizeDeps: {
     include: ['react', 'react-dom'],
     exclude: [],
   },
   esbuild: {
     logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  },
+  // Add custom TypeScript configuration
+  // This helps bypass the reference to tsconfig.node.json
+  define: {
+    'process.env': {},
   },
 }));
