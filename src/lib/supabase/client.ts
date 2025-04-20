@@ -1,3 +1,3 @@
 
-// This file is purposely empty to satisfy any imports that might be looking for it
-// All actual functionality is in src/lib/supabase.ts which uses Firebase under the hood
+// This file is intentionally left empty to prevent any Supabase-related imports
+export const supabase = null;
