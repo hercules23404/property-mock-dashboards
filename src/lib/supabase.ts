@@ -1,47 +1,91 @@
 
-import { createClient } from '@supabase/supabase-js';
+import { auth, firestore } from './firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
-// Initialize the Supabase client
-const supabaseUrl = 'https://zkfqubhmbkzvqjmhjlqu.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprZnF1YmhtYmt6dnFqbWhqbHF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ2NDcxMzYsImV4cCI6MjA2MDIyMzEzNn0.OomoypjxCVdNogew1kQARBny6ueNE8jrUiFS5oJ09tk';
-
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    storage: localStorage
-  }
-});
-
-// Custom functions to simplify auth
+// Custom functions to simplify auth with Firebase instead of Supabase
 export const createTenantUser = async (email: string, password: string, userData: any) => {
-  // First create auth user
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        ...userData,
-        role: 'tenant'
-      }
-    }
-  });
+  // Create auth user
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   
-  if (error) throw error;
-  return data;
+  if (userCredential.user) {
+    // Update profile if name is provided
+    if (userData.name) {
+      await updateProfile(userCredential.user, {
+        displayName: userData.name
+      });
+    }
+    
+    // Create user document with additional data
+    await setDoc(doc(firestore, 'profiles', userCredential.user.uid), {
+      id: userCredential.user.uid,
+      email,
+      role: 'tenant',
+      ...userData,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    
+    return {
+      user: userCredential.user,
+      profile: {
+        id: userCredential.user.uid,
+        email,
+        role: 'tenant',
+        ...userData
+      }
+    };
+  }
+  
+  throw new Error('Failed to create user');
 };
 
 export const updateUser = async (userId: string, userData: any) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert({
-      id: userId,
-      ...userData,
-      updated_at: new Date()
-    })
-    .select()
-    .single();
-    
-  if (error) throw error;
-  return data;
+  // Update user profile in Firestore
+  const userRef = doc(firestore, 'profiles', userId);
+  
+  await setDoc(userRef, {
+    ...userData,
+    updated_at: new Date()
+  }, { merge: true });
+  
+  // Get the updated user data
+  const updatedDoc = await getDoc(userRef);
+  
+  if (updatedDoc.exists()) {
+    return updatedDoc.data();
+  }
+  
+  throw new Error('Failed to update user');
+};
+
+// For compatibility with existing Supabase calls
+export const supabase = {
+  auth: {
+    signUp: async ({ email, password, options }: { email: string; password: string; options?: any }) => {
+      try {
+        const data = await createTenantUser(email, password, options?.data || {});
+        return { data, error: null };
+      } catch (error: any) {
+        return { data: null, error };
+      }
+    }
+  },
+  from: (table: string) => ({
+    upsert: (data: any) => {
+      const { id, ...rest } = data;
+      return {
+        select: () => ({
+          single: async () => {
+            try {
+              const updatedData = await updateUser(id, rest);
+              return { data: updatedData, error: null };
+            } catch (error: any) {
+              return { data: null, error };
+            }
+          }
+        })
+      };
+    }
+  })
 };

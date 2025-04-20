@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import { sendWelcomeEmail } from '@/lib/email';
 import { Loader2, ArrowLeft, UserPlus, Users, Building } from 'lucide-react';
 import StatisticsCard from '@/components/dashboard/StatisticsCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from '@/lib/supabase';
+import { createTenantUser } from '@/lib/supabase';
 
 interface TenantFormData {
     name: string;
@@ -65,7 +64,6 @@ const TenantManagement: React.FC = () => {
             try {
                 setLoading(true);
                 
-                // Fetch society details
                 const societyDoc = await getDoc(doc(firestore, 'societies', societyId));
                 if (societyDoc.exists()) {
                     setSociety({
@@ -78,7 +76,6 @@ const TenantManagement: React.FC = () => {
                     return;
                 }
                 
-                // Fetch tenants for this society
                 const tenantsRef = collection(firestore, 'profiles');
                 const q = query(tenantsRef, where("societyId", "==", societyId), where("role", "==", "tenant"));
                 const querySnapshot = await getDocs(q);
@@ -123,19 +120,8 @@ const TenantManagement: React.FC = () => {
         try {
             setCreating(true);
             
-            // Generate a random password if none provided
             const tenantPassword = formData.password || generateRandomPassword();
             
-            // Create the user in Firebase Auth
-            const { data: userData, error: authError } = await supabase.auth.signUp({
-                email: formData.email,
-                password: tenantPassword,
-            });
-            
-            if (authError) throw authError;
-            if (!userData.user) throw new Error("Failed to create user account");
-            
-            // Create tenant profile in Firestore
             const tenantData = {
                 name: formData.name,
                 email: formData.email,
@@ -148,20 +134,20 @@ const TenantManagement: React.FC = () => {
                 createdBy: user?.uid,
             };
             
-            // Create profile document
-            await addDoc(collection(firestore, 'profiles'), {
-                id: userData.user.id,
-                ...tenantData
-            });
+            const { user: newUser } = await createTenantUser(
+              formData.email, 
+              tenantPassword, 
+              tenantData
+            );
             
-            // Create role entry
+            if (!newUser) throw new Error("Failed to create user account");
+            
             await addDoc(collection(firestore, 'user_roles'), {
-                user_id: userData.user.id,
+                user_id: newUser.uid,
                 society_id: societyId,
                 role: 'tenant'
             });
             
-            // Send welcome email with credentials
             await sendWelcomeEmail(formData.email, {
                 name: formData.name,
                 email: formData.email,
@@ -169,17 +155,15 @@ const TenantManagement: React.FC = () => {
                 societyName: society.name
             });
             
-            // Update UI
             setTenants(prev => [
                 ...prev,
                 {
-                    id: userData.user.id,
+                    id: newUser.uid,
                     ...tenantData,
                     createdAt: new Date()
                 } as Tenant
             ]);
             
-            // Reset form & close dialog
             setFormData({
                 name: '',
                 email: '',
